@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<xliff version="1.0">
+  <file datatype="plaintext" date="2021-12-01T09:11:39Z" original="messages" product-name="dmf_local_crm" source-language="en">
+    <header/>
+    <body>
+      <trans-unit id="tx_dmflocalcrm_domain_model_data_userdata" xml:space="preserve">
+        <source>Digital Marketing Framework - Local CRM - User Data</source>
+      </trans-unit>
+      <trans-unit id="tx_dmflocalcrm_domain_model_data_userdata.created" xml:space="preserve">
+        <source>Created</source>
+      </trans-unit>
+      <trans-unit id="tx_dmflocalcrm_domain_model_data_userdata.changed" xml:space="preserve">
+        <source>Changed</source>
+      </trans-unit>
+      <trans-unit id="tx_dmflocalcrm_domain_model_data_userdata.user_id" xml:space="preserve">
+        <source>User ID</source>
+      </trans-unit>
+      <trans-unit id="tx_dmflocalcrm_domain_model_data_userdata.serialized_data" xml:space="preserve">
+        <source>Data</source>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

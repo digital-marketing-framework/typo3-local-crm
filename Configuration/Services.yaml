@@ -1,0 +1,24 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  DigitalMarketingFramework\Typo3\LocalCrm\:
+    resource: '../Classes/*'
+    exclude: '../Classes/Domain/Model/*'
+
+  DigitalMarketingFramework\Typo3\LocalCrm\Registry\EventListener\CollectorRegistryUpdateEventListener:
+    tags:
+      - name: event.listener
+        event: DigitalMarketingFramework\Typo3\Collector\Core\Registry\Event\CollectorRegistryUpdateEvent
+
+  DigitalMarketingFramework\Typo3\LocalCrm\Registry\EventListener\DistributorRegistryUpdateEventListener:
+    tags:
+      - name: event.listener
+        event: DigitalMarketingFramework\Typo3\Distributor\Core\Registry\Event\DistributorRegistryUpdateEvent
+
+  DigitalMarketingFramework\Typo3\LocalCrm\Registry\EventListener\CoreRegistryUpdateEventListener:
+    tags:
+      - name: event.listener
+        event: DigitalMarketingFramework\Typo3\Core\Registry\Event\CoreRegistryUpdateEvent

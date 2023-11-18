@@ -66,7 +66,7 @@ class Typo3LocalCrmService extends AbstractLocalCrmService
             return null;
         }
 
-        return $this->decodeData($userData->getSerializedUserData());
+        return $this->decodeData($userData->getSerializedData());
     }
 
     /**
@@ -83,7 +83,7 @@ class Typo3LocalCrmService extends AbstractLocalCrmService
             $this->userDataRepository->add($userData);
         } else {
             $userData->setUserId($userId);
-            $userData->setSerializedUserData($serializedData);
+            $userData->setSerializedData($serializedData);
             $this->userDataRepository->update($userData);
         }
     }

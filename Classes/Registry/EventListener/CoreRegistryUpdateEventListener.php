@@ -1,6 +1,6 @@
 <?php
 
-namespace DigitalMarketingFramework\Typo3\LocaleCrm\Registry\EventListener;
+namespace DigitalMarketingFramework\Typo3\LocalCrm\Registry\EventListener;
 
 use DigitalMarketingFramework\LocalCrm\LocalCrmInitialization;
 use DigitalMarketingFramework\Typo3\Core\Registry\EventListener\AbstractCoreRegistryUpdateEventListener;

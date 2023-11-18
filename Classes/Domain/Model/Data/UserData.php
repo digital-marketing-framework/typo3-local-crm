@@ -8,7 +8,7 @@ class UserData extends AbstractEntity
 {
     public function __construct(
         protected string $userId = '',
-        protected string $serializedUserData = '',
+        protected string $serializedData = '',
     ) {
     }
 
@@ -22,13 +22,13 @@ class UserData extends AbstractEntity
         $this->userId = $userId;
     }
 
-    public function getSerializedUserData(): string
+    public function getSerializedData(): string
     {
-        return $this->serializedUserData;
+        return $this->serializedData;
     }
 
-    public function setSerializedUserData(string $serializedUserData): void
+    public function setSerializedData(string $serializedData): void
     {
-        $this->serializedUserData = $serializedUserData;
+        $this->serializedData = $serializedData;
     }
 }

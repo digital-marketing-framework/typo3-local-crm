@@ -21,6 +21,9 @@ use TYPO3\CMS\Extbase\Security\Cryptography\HashService;
  */
 class Typo3LocalCrmService extends AbstractLocalCrmService
 {
+    /**
+     * @var int
+     */
     protected const USER_ID_LENGTH = 16;
 
     /**
@@ -51,6 +54,7 @@ class Typo3LocalCrmService extends AbstractLocalCrmService
             } catch (ExtensionConfigurationExtensionNotConfiguredException|ExtensionConfigurationPathDoesNotExistException) {
                 $expirationTimeInDays = 30;
             }
+
             $this->expirationTime = $expirationTimeInDays * 3600 * 24;
         }
 
@@ -163,7 +167,13 @@ class Typo3LocalCrmService extends AbstractLocalCrmService
         $secure = true;
         $httponly = true;
 
-        setcookie($name, $value, $expires, $path, $domain, $secure, $httponly);
+        setcookie($name, $value, [
+            'expires' => $expires,
+            'path' => $path,
+            'domain' => $domain,
+            'secure' => $secure,
+            'httponly' => $httponly,
+        ]);
     }
 
     protected function renewIdentifier(Typo3LocalCrmUserIdentifier $identifier): void

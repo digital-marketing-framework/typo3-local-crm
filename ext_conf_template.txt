@@ -1,0 +1,8 @@
+
+storage {
+    # cat=Storage; type=integer; label=Storage Page ID
+    pid = 0
+
+    # cat=Storage; type=integer; label=Expiration Time (days)
+    expirationTime = 30
+}

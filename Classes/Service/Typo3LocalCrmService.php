@@ -4,17 +4,25 @@ namespace DigitalMarketingFramework\Typo3\LocalCrm\Service;
 
 use DigitalMarketingFramework\Core\Context\ContextInterface;
 use DigitalMarketingFramework\Core\Context\WriteableContextInterface;
+use DigitalMarketingFramework\Core\Exception\InvalidIdentifierException;
 use DigitalMarketingFramework\Core\Model\Identifier\IdentifierInterface;
 use DigitalMarketingFramework\LocalCrm\Service\AbstractLocalCrmService;
 use DigitalMarketingFramework\Typo3\LocalCrm\Domain\Model\Data\UserData;
 use DigitalMarketingFramework\Typo3\LocalCrm\Domain\Model\Identifier\Typo3LocalCrmUserIdentifier;
 use DigitalMarketingFramework\Typo3\LocalCrm\Domain\Repository\Data\UserDataRepository;
+use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationExtensionNotConfiguredException;
+use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationPathDoesNotExistException;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+use TYPO3\CMS\Core\Crypto\Random;
+use TYPO3\CMS\Extbase\Security\Cryptography\HashService;
 
 /**
  * @extends AbstractLocalCrmService<Typo3LocalCrmUserIdentifier>
  */
 class Typo3LocalCrmService extends AbstractLocalCrmService
 {
+    protected const USER_ID_LENGTH = 16;
+
     /**
      * @var string
      */
@@ -25,31 +33,56 @@ class Typo3LocalCrmService extends AbstractLocalCrmService
      */
     public const COOKIE_NAME_USER_ID_HASH = 'local_crm_user_session_hash';
 
+    protected int $expirationTime;
+
     public function __construct(
+        protected ExtensionConfiguration $extensionConfiguration,
+        protected HashService $hashService,
+        protected Random $rng,
         protected UserDataRepository $userDataRepository,
     ) {
     }
 
+    protected function getExpirationTime(): int
+    {
+        if (!isset($this->expirationTime)) {
+            try {
+                $expirationTimeInDays = $this->extensionConfiguration->get('dmf_local_crm')['storage']['expirationTime'] ?? 30;
+            } catch (ExtensionConfigurationExtensionNotConfiguredException|ExtensionConfigurationPathDoesNotExistException) {
+                $expirationTimeInDays = 30;
+            }
+            $this->expirationTime = $expirationTimeInDays * 3600 * 24;
+        }
+
+        return $this->expirationTime;
+    }
+
     protected function generateUserId(): string
     {
-        // TODO implement actual user ID generation
-        return uniqid();
+        return $this->rng->generateRandomHexString(static::USER_ID_LENGTH);
     }
 
     protected function generateHash(string $userId): string
     {
-        // TODO implement actual salted hash
-        return md5('FF1D547B4539893830EBA2322F0E9737::' . $userId);
+        return $this->hashService->generateHmac($userId);
     }
 
     protected function validateHash(string $userId, string $hash): bool
     {
-        return $hash === $this->generateHash($userId);
+        return $this->hashService->validateHmac($userId, $hash);
     }
 
-    public function validateIdentifier(Typo3LocalCrmUserIdentifier $identifier): bool
+    public function validateIdentifier(Typo3LocalCrmUserIdentifier $identifier, bool $throwException = false): bool
     {
-        return $this->validateHash($identifier->getUserId(), $identifier->getHash());
+        if (!$this->validateHash($identifier->getUserId(), $identifier->getHash())) {
+            if ($throwException) {
+                throw new InvalidIdentifierException('User ID hash does not match.');
+            }
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -57,9 +90,7 @@ class Typo3LocalCrmService extends AbstractLocalCrmService
      */
     public function read(IdentifierInterface $identifier): ?array
     {
-        if (!$this->validateIdentifier($identifier)) {
-            return null;
-        }
+        $this->validateIdentifier($identifier, true);
 
         $userData = $this->userDataRepository->findOneByUserId($identifier->getUserId());
         if (!$userData instanceof UserData) {
@@ -74,6 +105,8 @@ class Typo3LocalCrmService extends AbstractLocalCrmService
      */
     public function write(IdentifierInterface $identifier, array $data): void
     {
+        $this->validateIdentifier($identifier, true);
+
         $userId = $identifier->getUserId();
         $serializedData = $this->encodeData($data);
 
@@ -93,6 +126,8 @@ class Typo3LocalCrmService extends AbstractLocalCrmService
         $identifier = $this->fetchIdentifierFromContext($source);
         if (!$identifier instanceof Typo3LocalCrmUserIdentifier) {
             $identifier = $this->createIdentifier();
+        } else {
+            $this->renewIdentifier($identifier);
         }
 
         $target->setCookie(static::COOKIE_NAME_USER_ID, $identifier->getUserId());
@@ -111,19 +146,39 @@ class Typo3LocalCrmService extends AbstractLocalCrmService
             return null;
         }
 
-        return $this->validateHash($userId, $hash) ? new Typo3LocalCrmUserIdentifier($userId, $hash) : null;
+        $identifier = new Typo3LocalCrmUserIdentifier($userId, $hash);
+
+        if (!$this->validateIdentifier($identifier)) {
+            return null;
+        }
+
+        return $identifier;
+    }
+
+    protected function setCookie(string $name, string $value): void
+    {
+        $expires = time() + $this->getExpirationTime();
+        $path = '/';
+        $domain = '';
+        $secure = true;
+        $httponly = true;
+
+        setcookie($name, $value, $expires, $path, $domain, $secure, $httponly);
+    }
+
+    protected function renewIdentifier(Typo3LocalCrmUserIdentifier $identifier): void
+    {
+        $this->setCookie(static::COOKIE_NAME_USER_ID, $identifier->getUserId());
+        $this->setCookie(static::COOKIE_NAME_USER_ID_HASH, $identifier->getHash());
     }
 
     public function createIdentifier(): Typo3LocalCrmUserIdentifier
     {
-        // TODO implement actual user ID generation and hash generation
         $userId = $this->generateUserId();
         $hash = $this->generateHash($userId);
+        $identifier = new Typo3LocalCrmUserIdentifier($userId, $hash);
+        $this->renewIdentifier($identifier);
 
-        // TODO expiration date, path, domain?
-        setcookie(static::COOKIE_NAME_USER_ID, $userId);
-        setcookie(static::COOKIE_NAME_USER_ID_HASH, $hash);
-
-        return new Typo3LocalCrmUserIdentifier($userId, $hash);
+        return $identifier;
     }
 }
